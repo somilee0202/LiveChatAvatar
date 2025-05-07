@@ -2,6 +2,7 @@ import asyncio
 import time
 import os
 import pyaudio
+import numpy as np
 from pathlib import Path
 from google.cloud.texttospeech_v1beta1.services.text_to_speech import TextToSpeechAsyncClient
 from google.cloud.texttospeech_v1beta1.types import (
@@ -99,6 +100,14 @@ class GoogleStreamTTS:
                         if not self._first_play_recorded and resp.audio_content:
                             self.first_play_time = time.time()
                             self._first_play_recorded = True
+                        # PCM 데이터 → numpy array로 변환 (16bit signed int)
+                        audio_np = np.frombuffer(resp.audio_content, dtype=np.int16)
+                        # 볼륨값(RMS) 계산
+                        if len(audio_np) > 0:
+                            rms = np.sqrt(np.mean(audio_np.astype(np.float32) ** 2))
+                            # 0~1로 정규화 (16bit max: 32767)
+                            norm_rms = rms / 32767
+                            print(f"🔊 볼륨값: {norm_rms:.3f}")
                         stream_out.write(resp.audio_content)
 
                 except Exception as e:
