@@ -1,9 +1,9 @@
 import asyncio
 import time
+import os
 import pyaudio
-from google.cloud.texttospeech_v1beta1.services.text_to_speech import (
-    TextToSpeechAsyncClient
-)
+from pathlib import Path
+from google.cloud.texttospeech_v1beta1.services.text_to_speech import TextToSpeechAsyncClient
 from google.cloud.texttospeech_v1beta1.types import (
     StreamingSynthesizeRequest,
     StreamingSynthesizeConfig,
@@ -14,10 +14,27 @@ from google.cloud.texttospeech_v1beta1.types import (
 )
 
 RATE = 24000
-DEFAULT_OUT = next(
-    i for i in range(pyaudio.PyAudio().get_device_count())
-    if "스피커" in pyaudio.PyAudio().get_device_info_by_index(i)["name"]
-)
+
+# ✅ BASE_DIR: 현재 tts.py 파일 기준 디렉토리
+BASE_DIR = Path(__file__).resolve().parent
+
+# ✅ credentials.json 경로를 절대경로로 지정하고 환경 변수 설정
+CREDENTIALS_PATH = BASE_DIR / "credentials.json"
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = str(CREDENTIALS_PATH)
+
+# ✅ 출력 장치 자동 탐색 (macOS 포함, 다양한 이름 고려)
+def find_output_device(target_keywords=("Speaker", "Output", "Built-in", "스피커")):
+    pa = pyaudio.PyAudio()
+    for i in range(pa.get_device_count()):
+        info = pa.get_device_info_by_index(i)
+        name = info["name"]
+        if any(k.lower() in name.lower() for k in target_keywords):
+            print(f"🎧 출력 장치 선택됨: {i} - {name}")
+            return i
+    print("❌ 출력 장치를 찾지 못했습니다. 시스템 기본 장치 사용 시도")
+    return None
+
+DEFAULT_OUT = find_output_device()
 
 class GoogleStreamTTS:
     def __init__(self,
@@ -30,20 +47,14 @@ class GoogleStreamTTS:
         self.speaking_rate = speaking_rate
         self.q: asyncio.Queue = asyncio.Queue()
         self._worker: asyncio.Task | None = None
-
-        # 🔹 음성 재생 시점 기록용
         self.first_play_time: float | None = None
         self._first_play_recorded = False
 
     def reset_timing(self):
-        """TTS 타이밍 초기화 (매 대화마다 호출 필요)"""
         self.first_play_time = None
         self._first_play_recorded = False
 
-    from typing import Optional
-
-    def get_first_play_time(self) -> Optional[float]:
-        """첫 음성 재생 시각 반환"""
+    def get_first_play_time(self):
         return self.first_play_time
 
     async def _worker_loop(self):
@@ -53,19 +64,16 @@ class GoogleStreamTTS:
             channels=1,
             rate=RATE,
             output=True,
-            output_device_index=DEFAULT_OUT
+            output_device_index=DEFAULT_OUT  # ✅ 안전하게 선택된 장치 사용
         )
         try:
             while True:
                 sentence = await self.q.get()
-
-                # sentinel 처리
                 if sentence is None:
                     self.q.task_done()
                     break
 
                 try:
-                    # 1) 스트리밍 설정 메시지 구성
                     synth_cfg = StreamingSynthesizeConfig(
                         voice=VoiceSelectionParams(
                             language_code=self.language_code,
@@ -77,19 +85,16 @@ class GoogleStreamTTS:
                         ),
                     )
 
-                    # 2) 요청 제너레이터: 첫 메시지엔 config, 그 뒤엔 input만
                     async def requests():
                         yield StreamingSynthesizeRequest(streaming_config=synth_cfg)
                         yield StreamingSynthesizeRequest(
                             input=StreamingSynthesisInput(text=sentence)
                         )
 
-                    # 3) streaming_synthesize 호출
                     responses = await self.client.streaming_synthesize(
                         requests=requests()
                     )
 
-                    # 4) 응답 스트림을 곧바로 재생하며, 첫 음성 시각 기록
                     async for resp in responses:
                         if not self._first_play_recorded and resp.audio_content:
                             self.first_play_time = time.time()
