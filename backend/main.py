@@ -9,7 +9,7 @@ from stt import stream_stt_until_final
 # from llm_gpt import ask_gpt_stream
 from llm import ask_claude_stream
 from tts import GoogleStreamTTS
-
+from lipsync import generate_mouthform_timings
 # os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "credentials.json"
 from dotenv import load_dotenv
 
@@ -43,22 +43,6 @@ def recognize_speech():
     print(f"🟡 STT 레이턴시: {latency:.2f}초")
     return transcript, start, latency
 
-# async def generate_response(prompt):
-#     start = time.time()
-#     full_response = ""
-#     first_token_time = None
-#     # llm_stream = ask_gpt_stream(prompt)
-#     llm_stream = ask_claude_stream(prompt)
-
-#     async for chunk in llm_stream:
-#         if first_token_time is None:
-#             first_token_time = time.time()
-#         full_response += chunk
-
-#     latency = first_token_time - start if first_token_time else 0
-#     print(f"🟢 LLM 레이턴시: {latency:.2f}초")
-#     return full_response, latency
-
 async def generate_response(prompt):
     start = time.time()
     full_response = ""
@@ -74,6 +58,10 @@ async def generate_response(prompt):
     return full_response, latency
 
 async def speak_response(text):
+    # 1. 립싱크용 타이밍 json 미리 생성
+    generate_mouthform_timings(text, output_path="frontend/mouthForm.json")
+
+    # 2. TTS 실행
     tts = GoogleStreamTTS()
     tts.reset_timing() 
     await tts.start()
