@@ -3,6 +3,7 @@ import time
 import os
 import pyaudio
 import numpy as np
+import json
 from pathlib import Path
 from google.cloud.texttospeech_v1beta1.services.text_to_speech import TextToSpeechAsyncClient
 from google.cloud.texttospeech_v1beta1.types import (
@@ -108,6 +109,11 @@ class GoogleStreamTTS:
                             # 0~1로 정규화 (16bit max: 32767)
                             norm_rms = rms / 32767
                             print(f"🔊 볼륨값: {norm_rms:.3f}")
+
+                            volume_data = {"volume": float(round(norm_rms, 3))}
+
+                            with open("frontend/volume.json", "w") as f:
+                                json.dump(volume_data, f)
                         stream_out.write(resp.audio_content)
 
                 except Exception as e:
@@ -132,3 +138,7 @@ class GoogleStreamTTS:
         await self.q.join()
         if self._worker:
             await self._worker
+    
+        # ✅ TTS 종료 후 입을 닫기 위해 볼륨 0으로 덮어쓰기
+        with open("frontend/volume.json", "w") as f:
+            json.dump({"volume": 0}, f)
