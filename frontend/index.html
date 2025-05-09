@@ -2,19 +2,262 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <title>Live2D Viewer</title>
+  <title>화상 채팅 아바타</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/6.5.10/browser/pixi.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/live2dcubismcore@1.0.2/live2dcubismcore.min.js"></script>
   <script src="https://unpkg.com/pixi-live2d-display@0.4.0/dist/cubism4.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
 <style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+  
+  body {
+    margin: 0;
+    overflow: hidden;
+    background: linear-gradient(135deg, #7f53ac 0%, #647dee 100%);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .app-container {
+    position: relative;
+    width: 90%;
+    max-width: 800px;
+    height: 80vh;
+    background-color: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border-radius: 24px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+    background-color: rgba(0, 0, 0, 0.2);
+    color: white;
+  }
+  
+  .app-title {
+    font-weight: 700;
+    font-size: 1.3rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .app-title .status {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: #ff5f56;
+    transition: background-color 0.3s ease;
+  }
+  
+  .app-title .status.active {
+    background-color: #27c93f;
+  }
+  
+  .canvas-container {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+  }
+  
   canvas {
-    height: 500px;
+    width: 100%;
+    height: 100%;
     object-fit: cover;
   }
+  
+  .control-panel {
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 16px;
+    z-index: 10;
+  }
+  
+  .btn {
+    padding: 12px 24px;
+    border-radius: 50px;
+    border: none;
+    font-weight: 500;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: white;
+  }
+  
+  .btn-start {
+    background-color: #27c93f;
+  }
+  
+  .btn-start:hover {
+    background-color: #22a938;
+    transform: translateY(-2px);
+  }
+  
+  .btn-stop {
+    background-color: #ff5f56;
+  }
+  
+  .btn-stop:hover {
+    background-color: #e04940;
+    transform: translateY(-2px);
+  }
+  
+  .btn-disabled {
+    background-color: #888;
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+  
+  .btn-disabled:hover {
+    transform: none;
+  }
+  
+  .visualizer {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 60px;
+    padding: 0 20px;
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+  }
+  
+  .visualizer-bar {
+    flex: 1;
+    background-color: rgba(255, 255, 255, 0.7);
+    height: 3px;
+    border-radius: 1px;
+    transition: height 0.1s ease;
+  }
+  
+  .status-indicator {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    padding: 8px 16px;
+    border-radius: 50px;
+    color: white;
+    font-size: 0.85rem;
+    font-weight: 500;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  
+  .status-indicator.active {
+    opacity: 1;
+  }
+  
+  .status-indicator.speaking {
+    background-color: rgba(39, 201, 63, 0.7);
+  }
+  
+  .status-indicator.idle {
+    background-color: rgba(128, 128, 128, 0.7);
+  }
+  
+  .icon-mic, .icon-stop {
+    width: 16px;
+    height: 16px;
+  }
+  
+  .loader {
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top: 3px solid white;
+    width: 20px;
+    height: 20px;
+    animation: spin 1s linear infinite;
+    display: none;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
 </style>
-<body style="margin: 0; overflow: hidden; background-color: #282c34">
-  <canvas id="canvas" style="margin-top: 100px"></canvas>
+<body>
+  <div class="app-container">
+    <div class="top-bar">
+      <div class="app-title">
+        <div class="status"></div>
+        <span>화상 채팅 아바타</span>
+      </div>
+      <div class="loader" id="loader"></div>
+    </div>
+    
+    <div class="canvas-container">
+      <canvas id="canvas"></canvas>
+      <div class="status-indicator" id="statusIndicator">대기중</div>
+      
+      <div class="visualizer" id="visualizer">
+        <!-- 음성 시각화 바 -->
+        <div class="visualizer-bar"></div>
+        <div class="visualizer-bar"></div>
+        <div class="visualizer-bar"></div>
+        <div class="visualizer-bar"></div>
+        <div class="visualizer-bar"></div>
+        <div class="visualizer-bar"></div>
+        <div class="visualizer-bar"></div>
+        <div class="visualizer-bar"></div>
+        <div class="visualizer-bar"></div>
+        <div class="visualizer-bar"></div>
+        <div class="visualizer-bar"></div>
+        <div class="visualizer-bar"></div>
+        <div class="visualizer-bar"></div>
+        <div class="visualizer-bar"></div>
+        <div class="visualizer-bar"></div>
+        <div class="visualizer-bar"></div>
+        <div class="visualizer-bar"></div>
+        <div class="visualizer-bar"></div>
+        <div class="visualizer-bar"></div>
+        <div class="visualizer-bar"></div>
+      </div>
+    </div>
+    
+    <div class="control-panel">
+      <button class="btn btn-start" id="startBtn">
+        <svg class="icon-mic" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 15.5C14.21 15.5 16 13.71 16 11.5V6C16 3.79 14.21 2 12 2C9.79 2 8 3.79 8 6V11.5C8 13.71 9.79 15.5 12 15.5Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M4.34961 9.6499V11.3499C4.34961 15.5699 7.77961 18.9999 11.9996 18.9999C16.2196 18.9999 19.6496 15.5699 19.6496 11.3499V9.6499" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M12 19V22" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        대화 시작
+      </button>
+      <button class="btn btn-stop btn-disabled" id="stopBtn" disabled>
+        <svg class="icon-stop" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M9.3 21H14.7C19.2 21 21 19.2 21 14.7V9.3C21 4.8 19.2 3 14.7 3H9.3C4.8 3 3 4.8 3 9.3V14.7C3 19.2 4.8 21 9.3 21Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M9 15L15 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M15 15L9 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        대화 종료
+      </button>
+    </div>
+  </div>
 
   <script>
     let model;
@@ -22,6 +265,18 @@
     let mouthFormStartTime = null;
     let lastMouthFormHash = "";
     let isSpeaking = false;
+    let isAppRunning = false;
+    let backendProcess = null;
+    let volumeCheckInterval = null;
+    let mouthFormCheckInterval = null;
+    
+    // 상태 관련 DOM 요소
+    const statusDot = document.querySelector('.app-title .status');
+    const statusIndicator = document.getElementById('statusIndicator');
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const loader = document.getElementById('loader');
+    const visualizerBars = document.querySelectorAll('.visualizer-bar');
     
     // 말하고 있는지 여부 (볼륨 기준)
     let currentVolume = 0;
@@ -36,28 +291,50 @@
       view: document.getElementById("canvas"),
       width: window.innerWidth,
       height: window.innerHeight,
-      backgroundColor: 0x282c34,
-      resizeTo: window,
+      transparent: true,
+      resizeTo: document.querySelector('.canvas-container'),
     });
 
-    PIXI.live2d.Live2DModel.from(
-      "./model/haru/runtime/haru_greeter_t05.model3.json?_=" + Date.now()
-    ).then((loadedModel) => {
-      model = loadedModel;
-      model.scale.set(0.5);
-      model.x = app.renderer.width / 2.5;
-      model.y = app.renderer.height * 1.5;
-      model.anchor.set(0.5, 0.5);
-      app.stage.addChild(model);
-      
-      // 기본 입 모양 설정
-      if (model) {
-        model.internalModel.coreModel.setParameterValueById("ParamMouthForm", DEFAULT_MOUTH_FORM);
-      }
+    // 모델 로드 함수
+    function loadModel() {
+      return PIXI.live2d.Live2DModel.from(
+        "./model/haru/runtime/haru_greeter_t05.model3.json?_=" + Date.now()
+      ).then((loadedModel) => {
+        model = loadedModel;
+        model.scale.set(0.5);
+        model.x = app.renderer.width / 2;
+        model.y = app.renderer.height * 1.2;
+        model.anchor.set(0.5, 0.35);
+        app.stage.addChild(model);
+        
+        // 기본 입 모양 설정
+        if (model) {
+          model.internalModel.coreModel.setParameterValueById("ParamMouthForm", DEFAULT_MOUTH_FORM);
+        }
+        
+        // 간단한 애니메이션 추가 (아바타가 살짝 흔들리는 효과)
+        let time = 0;
+        app.ticker.add(() => {
+          time += 0.01;
+          if (model) {
+            model.position.y = app.renderer.height * 1.2 + Math.sin(time) * 5;
+            
+            // 랜덤하게 눈 깜빡임 추가
+            if (Math.random() < 0.005) {
+              model.internalModel.coreModel.setParameterValueById("ParamEyeLOpen", 0);
+              model.internalModel.coreModel.setParameterValueById("ParamEyeROpen", 0);
+              
+              setTimeout(() => {
+                model.internalModel.coreModel.setParameterValueById("ParamEyeLOpen", 1);
+                model.internalModel.coreModel.setParameterValueById("ParamEyeROpen", 1);
+              }, 100);
+            }
+          }
+        });
 
-      startVolumeSync();
-      startMouthFormSync();
-    });
+        return model;
+      });
+    }
 
     // 해시 함수 (JSON 내용 비교용)
     function simpleHash(str) {
@@ -75,7 +352,7 @@
       fetchMouthFormData();
       
       // 주기적으로 새 mouthForm.json 확인 (200ms마다)
-      setInterval(fetchMouthFormData, 200);
+      mouthFormCheckInterval = setInterval(fetchMouthFormData, 200);
       
       // 프레임 동기화 애니메이션 시작
       requestAnimationFrame(syncMouthFormFrame);
@@ -83,6 +360,8 @@
     
     // 입 가로 길이 데이터 가져오기
     function fetchMouthFormData() {
+      if (!isAppRunning) return;
+      
       fetch("mouthForm.json?_=" + Date.now())
         .then(res => res.json())
         .then(data => {
@@ -97,6 +376,9 @@
             mouthFormStartTime = performance.now();
             lastMouthFormHash = dataHash;
             isSpeaking = true;
+            
+            // 상태 표시 업데이트
+            updateSpeakingState(true);
           }
         })
         .catch(err => {
@@ -142,6 +424,7 @@
           if (lastFrame && elapsed > lastFrame.time + 0.1) {
             console.log("말하기 종료");
             isSpeaking = false;
+            updateSpeakingState(false);
           }
         }
       } else {
@@ -149,7 +432,7 @@
         model.internalModel.coreModel.setParameterValueById("ParamMouthForm", DEFAULT_MOUTH_FORM);
         
         // 현재 볼륨이 임계값 이상이면 말하기 시작으로 간주
-        if (currentVolume > SPEAKING_THRESHOLD && !isSpeaking) {
+        if (currentVolume > SPEAKING_THRESHOLD && !isSpeaking && isAppRunning) {
           fetchMouthFormData(); // 새로운 데이터 확인
         }
       }
@@ -159,7 +442,9 @@
 
     // 볼륨 기반 입 벌림 립싱크
     function startVolumeSync() {
-      setInterval(async () => {
+      volumeCheckInterval = setInterval(async () => {
+        if (!isAppRunning) return;
+        
         try {
           const res = await fetch("volume.json?_=" + Date.now());
           if (!res.ok) return;
@@ -173,13 +458,136 @@
             // 볼륨에 따라 말하기 상태 업데이트
             if (volume > SPEAKING_THRESHOLD && !isSpeaking) {
               fetchMouthFormData(); // 새로운 립싱크 데이터 확인
+              updateSpeakingState(true);
             }
+            
+            // 볼륨 시각화 업데이트
+            updateVisualizer(volume);
           }
         } catch (e) {
           console.warn("볼륨 동기화 실패:", e);
         }
       }, 50);
     }
+    
+    // 음성 볼륨 시각화 업데이트
+    function updateVisualizer(volume) {
+      const maxHeight = 40; // 최대 높이
+      const multiplier = 5; // 볼륨 증폭 계수
+      
+      visualizerBars.forEach((bar, index) => {
+        // 각 바마다 약간의 랜덤 값 추가
+        const randomFactor = Math.random() * 0.5 + 0.5;
+        const barVolume = volume * multiplier * randomFactor;
+        
+        // 중앙에서 멀어질수록 높이 감소
+        const distanceFactor = 1 - Math.abs(index - visualizerBars.length / 2) / (visualizerBars.length / 2) * 0.5;
+        
+        const height = Math.min(barVolume * maxHeight * distanceFactor, maxHeight);
+        bar.style.height = (height > 3 ? height : 3) + 'px';
+      });
+    }
+    
+    // 말하기 상태 UI 업데이트
+    function updateSpeakingState(speaking) {
+      if (speaking) {
+        statusIndicator.textContent = "말하는 중...";
+        statusIndicator.classList.remove('idle');
+        statusIndicator.classList.add('speaking', 'active');
+      } else {
+        statusIndicator.textContent = "대기중";
+        statusIndicator.classList.remove('speaking');
+        statusIndicator.classList.add('idle', 'active');
+      }
+    }
+    
+    // 백엔드 프로세스 시작
+    async function startBackendProcess() {
+      loader.style.display = 'block';
+      try {
+        const response = await fetch('/start-backend', {
+          method: 'POST'
+        });
+        
+        if (response.ok) {
+          isAppRunning = true;
+          statusDot.classList.add('active');
+          startBtn.disabled = true;
+          startBtn.classList.add('btn-disabled');
+          stopBtn.disabled = false;
+          stopBtn.classList.remove('btn-disabled');
+          
+          // 립싱크 시작
+          startVolumeSync();
+          startMouthFormSync();
+          
+          statusIndicator.textContent = "대기중";
+          statusIndicator.classList.remove('speaking');
+          statusIndicator.classList.add('idle', 'active');
+        } else {
+          alert('백엔드 프로세스를 시작하는데 실패했습니다.');
+        }
+      } catch (error) {
+        console.error('백엔드 시작 오류:', error);
+        alert('서버 연결에 실패했습니다. 서버가 실행 중인지 확인해주세요.');
+      } finally {
+        loader.style.display = 'none';
+      }
+    }
+    
+    // 백엔드 프로세스 종료
+    async function stopBackendProcess() {
+      loader.style.display = 'block';
+      try {
+        const response = await fetch('/stop-backend', {
+          method: 'POST'
+        });
+        
+        if (response.ok) {
+          isAppRunning = false;
+          statusDot.classList.remove('active');
+          startBtn.disabled = false;
+          startBtn.classList.remove('btn-disabled');
+          stopBtn.disabled = true;
+          stopBtn.classList.add('btn-disabled');
+          
+          // 인터벌 정리
+          clearInterval(volumeCheckInterval);
+          clearInterval(mouthFormCheckInterval);
+          
+          // 상태 초기화
+          isSpeaking = false;
+          statusIndicator.classList.remove('active');
+          
+          // 시각화 바 초기화
+          visualizerBars.forEach(bar => {
+            bar.style.height = '3px';
+          });
+        } else {
+          alert('백엔드 프로세스를 종료하는데 실패했습니다.');
+        }
+      } catch (error) {
+        console.error('백엔드 종료 오류:', error);
+        alert('서버 연결에 실패했습니다.');
+      } finally {
+        loader.style.display = 'none';
+      }
+    }
+    
+    // 이벤트 리스너 설정
+    startBtn.addEventListener('click', startBackendProcess);
+    stopBtn.addEventListener('click', stopBackendProcess);
+    
+    // 앱 초기화
+    window.addEventListener('load', () => {
+      // 모델 로드
+      loadModel().then(() => {
+        console.log('모델 로드 완료');
+      }).catch(err => {
+        console.error('모델 로드 실패:', err);
+        alert('모델을 로드하는데 실패했습니다.');
+      });
+    });
   </script>
 </body>
 </html>
