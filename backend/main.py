@@ -4,6 +4,7 @@ import time
 import csv
 import os
 from datetime import datetime
+import json
 
 from stt import stream_stt_until_final
 # from llm_gpt import ask_gpt_stream
@@ -36,6 +37,10 @@ if not os.path.exists(CSV_FILE):
         writer = csv.DictWriter(f, fieldnames=FIELDNAMES)
         writer.writeheader()
 
+with open("frontend/mouthForm.json", "w", encoding="utf-8") as f:
+    json.dump([], f)
+with open("frontend/volume.json", "w", encoding="utf-8") as f:
+    json.dump({"volume": 0}, f)
 def recognize_speech():
     transcript, start = stream_stt_until_final()
     end = time.time()
@@ -71,6 +76,8 @@ async def speak_response(text):
     await tts.finish()
 
     first_play = tts.get_first_play_time()
+    if first_play is None:
+        first_play = time.time()
     latency = first_play - start if first_play else 0
     print(f"🔵 TTS 레이턴시: {latency:.2f}초")
     return first_play, latency

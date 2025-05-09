@@ -108,7 +108,6 @@ class GoogleStreamTTS:
                             rms = np.sqrt(np.mean(audio_np.astype(np.float32) ** 2))
                             # 0~1로 정규화 (16bit max: 32767)
                             norm_rms = rms / 32767
-                            print(f"🔊 볼륨값: {norm_rms:.3f}")
 
                             volume_data = {"volume": float(round(norm_rms, 3))}
 
