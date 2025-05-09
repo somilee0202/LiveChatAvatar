@@ -37,10 +37,15 @@ if not os.path.exists(CSV_FILE):
         writer = csv.DictWriter(f, fieldnames=FIELDNAMES)
         writer.writeheader()
 
-with open("frontend/mouthForm.json", "w", encoding="utf-8") as f:
+# BASE_DIR: backend/main.py에서 두 단계 위(프로젝트 루트)
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+FRONTEND_DIR = os.path.join(BASE_DIR, "frontend")
+
+with open(os.path.join(FRONTEND_DIR, "mouthForm.json"), "w", encoding="utf-8") as f:
     json.dump([], f)
-with open("frontend/volume.json", "w", encoding="utf-8") as f:
+with open(os.path.join(FRONTEND_DIR, "volume.json"), "w", encoding="utf-8") as f:
     json.dump({"volume": 0}, f)
+
 def recognize_speech():
     transcript, start = stream_stt_until_final()
     end = time.time()
@@ -64,7 +69,7 @@ async def generate_response(prompt):
 
 async def speak_response(text):
     # 1. 립싱크용 타이밍 json 미리 생성
-    generate_mouthform_timings(text, output_path="frontend/mouthForm.json")
+    generate_mouthform_timings(text, output_path=os.path.join(FRONTEND_DIR, "mouthForm.json"))
 
     # 2. TTS 실행
     tts = GoogleStreamTTS()
@@ -87,6 +92,32 @@ async def main():
     print("🌟 실시간 아바타 대화 시스템 시작")
     print("🛑 '그만'이라고 말하면 프로그램이 종료됩니다.\n")
 
+    # ✅ [1회성 예열] 고정 문장으로 LLM → TTS 실행
+    transcript = "안녕"
+    total_start = time.time()
+    print(f"🤖 예열 문장: {transcript}")
+    
+    response, llm_latency = await generate_response(transcript)
+    total_end, tts_latency = await speak_response(response)
+
+    total_latency = total_end - total_start
+    print(f"🧊 예열 완료 - 총 레이턴시: {total_latency:.2f}초\n")
+
+    with open(CSV_FILE, mode="a", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=FIELDNAMES)
+        writer.writerow({
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "question": transcript,
+            "run": run,
+            "stt_latency": 0.0,  # STT는 없으므로 0 처리
+            "llm_latency": round(llm_latency, 2),
+            "tts_latency": round(tts_latency, 2),
+            "total_latency": round(total_latency, 2),
+        })
+
+    run += 1  # 예열 이후 2번째부터는 사용자 입력
+
+    # ✅ 실제 대화 루프 시작
     while True:
         transcript, total_start, stt_latency = recognize_speech()
 
@@ -113,6 +144,7 @@ async def main():
             })
 
         run += 1
+
 
 if __name__ == "__main__":
     asyncio.run(main())

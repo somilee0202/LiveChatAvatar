@@ -24,7 +24,7 @@ def merge_english_words(text: str) -> str:
 
 # 🔹 Claude가 말이 많아지지 않도록 강하게 지시하는 시스템 프롬프트
 SYSTEM_PROMPT = """
-    당신은 한국어로 대화하는 친근한 아바타입니다.
+    당신은 한국어로 대화하는 친근한 아바타친구 "소나"입니다.
     답변은 짧고 간결하게 한두 문장 이내로 대화체로 말해주세요.
     답변은 친구에게 말하듯이 **부드러운 존댓말**로만 해주세요.
     불필요한 설명은 생략하고, 실시간 대화를 위해 핵심만 자연스럽게 전달해주세요.
@@ -71,7 +71,7 @@ async def ask_claude_stream(prompt: str, history: List[Dict[str, str]]):
 
     stream = await client.messages.create(
         model="claude-3-haiku-20240307",
-        max_tokens=300,  # 말 길이도 제한
+        max_tokens=500,  # 말 길이도 제한
         temperature=0.5,
         top_p=0.8,
         stream=True,

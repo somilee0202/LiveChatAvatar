@@ -392,6 +392,13 @@
         return;
       }
 
+      // 볼륨이 0이면 입꼬리도 중립값으로 강제
+      if (currentVolume <= SPEAKING_THRESHOLD) {
+        model.internalModel.coreModel.setParameterValueById("ParamMouthForm", DEFAULT_MOUTH_FORM);
+        requestAnimationFrame(syncMouthFormFrame);
+        return;
+      }
+
       // 말하는 중이고 유효한 시퀀스가 있을 때만 적용
       if (isSpeaking && mouthFormSeq && mouthFormSeq.length > 0) {
         const elapsed = (now - mouthFormStartTime) / 1000;

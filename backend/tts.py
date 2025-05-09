@@ -18,7 +18,9 @@ from google.cloud.texttospeech_v1beta1.types import (
 RATE = 24000
 
 # ✅ BASE_DIR: 현재 tts.py 파일 기준 디렉토리
-BASE_DIR = Path(__file__).resolve().parent
+BASE_DIR = Path(__file__).resolve().parent.parent  # backend/tts.py에서 두 단계 위(프로젝트 루트)
+FRONTEND_DIR = BASE_DIR / "frontend"
+VOLUME_JSON_PATH = FRONTEND_DIR / "volume.json"
 
 # ✅ credentials.json 경로를 절대경로로 지정하고 환경 변수 설정
 CREDENTIALS_PATH = BASE_DIR / "credentials.json"
@@ -111,7 +113,7 @@ class GoogleStreamTTS:
 
                             volume_data = {"volume": float(round(norm_rms, 3))}
 
-                            with open("frontend/volume.json", "w") as f:
+                            with open(VOLUME_JSON_PATH, "w") as f:
                                 json.dump(volume_data, f)
                         stream_out.write(resp.audio_content)
 
@@ -139,5 +141,5 @@ class GoogleStreamTTS:
             await self._worker
     
         # ✅ TTS 종료 후 입을 닫기 위해 볼륨 0으로 덮어쓰기
-        with open("frontend/volume.json", "w") as f:
+        with open(VOLUME_JSON_PATH, "w") as f:
             json.dump({"volume": 0}, f)
