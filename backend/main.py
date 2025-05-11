@@ -90,7 +90,6 @@ async def speak_response(text):
 async def main():
     run = 1
     print("🌟 실시간 아바타 대화 시스템 시작")
-    print("🛑 '그만'이라고 말하면 프로그램이 종료됩니다.\n")
 
     # ✅ [1회성 예열] 고정 문장으로 LLM → TTS 실행
     transcript = "안녕"
@@ -120,10 +119,6 @@ async def main():
     # ✅ 실제 대화 루프 시작
     while True:
         transcript, total_start, stt_latency = recognize_speech()
-
-        if transcript.replace(" ", "") == "그만":
-            print("👋 프로그램을 종료합니다.")
-            break
 
         response, llm_latency = await generate_response(transcript)
         total_end, tts_latency = await speak_response(response)

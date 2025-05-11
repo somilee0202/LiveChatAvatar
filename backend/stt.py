@@ -55,7 +55,7 @@ def stream_stt_until_final():
 
 
     try:
-        print("🎤 말하세요... '그만'이라고 말하면 종료됩니다.")
+        print("🎤 말하세요... ")
         for response in responses:
             if not response.results:
                 continue
@@ -73,9 +73,6 @@ def stream_stt_until_final():
                     latency = round(final_transcript_time - last_audio_time, 3)
                     print(f"⏱ 체감 STT 레이턴시: {latency}초")
 
-                if "그만" in transcript.replace(" ", ""):
-                    print("🛑 '그만' 감지! 프로그램 종료")
-                    return "그만", final_transcript_time
                 return transcript, final_transcript_time
             else:
                 print(f"⌛ 중간 인식: {transcript}", end="\r")
