@@ -5,6 +5,8 @@ import signal
 import time
 import threading
 import atexit
+from backend.tts import GoogleStreamTTS
+import asyncio
 
 # 프로젝트 구조에 맞게 frontend 폴더 경로 설정
 frontend_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'frontend')
@@ -80,6 +82,14 @@ def start_backend():
             print(f"백엔드 시작 오류: {str(e)}")
             return jsonify({"status": "error", "message": str(e)}), 500
 
+def play_exit_tts():
+    async def _play():
+        tts = GoogleStreamTTS()
+        await tts.start()
+        await tts.enqueue("네, 대화를 종료할게요. 언제든 제가 필요하시면 다시 찾아주세요. 좋은 하루 보내세요!")
+        await tts.finish()
+    asyncio.run(_play())
+
 @app.route('/stop-backend', methods=['POST'])
 def stop_backend():
     global backend_process
@@ -89,6 +99,8 @@ def stop_backend():
             return jsonify({"status": "not_running"}), 400
         
         try:
+            # 종료 멘트 TTS 먼저 재생
+            play_exit_tts()
             # 프로세스 종료
             pid = backend_process.pid
             
