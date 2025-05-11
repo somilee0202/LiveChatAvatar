@@ -16,7 +16,7 @@
 - backend/.env: 환경 변수 파일 (반드시 backend/ 디렉토리에 위치)
 
 ### 디렉토리 구조 예시
-
+```
 프로젝트 루트/
 ├── backend/
 │   ├── main.py
@@ -42,7 +42,7 @@
 ├── requirements.txt
 ├── README.md
 └── credentials.json  (Google Cloud 서비스 계정 키, 위치 예시)
-
+```
 ### 환경설정 파일 위치 안내
 
 - **.env**:  반드시 backend/ 디렉토리에 위치해야 합니다.
