@@ -13,7 +13,40 @@
 - frontend/: 웹 프론트엔드(index.html, Live2D 리소스 등)
 - server.py: Flask 웹서버 및 백엔드 프로세스 관리
 - requirements.txt: 의존 패키지 목록
-- .env: 환경 변수 파일
+- backend/.env: 환경 변수 파일 (반드시 backend/ 디렉토리에 위치)
+
+### 디렉토리 구조 예시
+
+프로젝트 루트/
+├── backend/
+│   ├── main.py
+│   ├── tts.py
+│   ├── stt.py
+│   ├── llm.py
+│   ├── lipsync.py
+│   └── .env   (환경 변수 파일)
+├── frontend/
+│   ├── index.html
+│   ├── mouthForm.json
+│   ├── volume.json
+│   └── model/
+│       └── haru/
+│           └── runtime/
+│               ├── haru_greeter_t05.model3.json
+│               ├── haru_greeter_t05.moc3
+│               ├── haru_greeter_t05.pose3.json
+│               ├── haru_greeter_t05.physics3.json
+│               └── motion/
+│                   └── ... (여러 .motion3.json 파일)
+├── server.py
+├── requirements.txt
+├── README.md
+└── credentials.json  (Google Cloud 서비스 계정 키, 위치 예시)
+
+### 환경설정 파일 위치 안내
+
+- **.env**:  반드시 backend/ 디렉토리에 위치해야 합니다.
+- **credentials.json**:  Google Cloud 서비스 계정 키 파일로, `.env`에서 지정한 경로(예: `GOOGLE_APPLICATION_CREDENTIALS=../credentials.json`)에 맞게 프로젝트 루트 또는 backend/ 등 원하는 위치에 저장하면 됩니다.
 
 ## 사전 요구사항
 
