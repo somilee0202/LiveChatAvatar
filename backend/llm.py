@@ -1,12 +1,16 @@
 # llm_claude_memory.py
 import os
 import re
+import requests
+from datetime import datetime
+from zoneinfo import ZoneInfo
 from typing import List, Dict, Callable
 from dotenv import load_dotenv
 from anthropic import AsyncAnthropic
 
 load_dotenv()
 client = AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+WEATHER_KEY = os.getenv("OPENWEATHER_API_KEY")
 
 SENT_END = re.compile(r"[.!?…]\s*$|[\n]+")
 
@@ -21,6 +25,20 @@ def merge_english_words(text: str) -> str:
         prev = text
         text = pattern.sub(r"\1", text)
     return text
+
+# 시간 반환 함수
+def get_current_time(tz: str = "Asia/Seoul") -> str:
+    now = datetime.now(ZoneInfo(tz))
+    return f"지금은 {now.hour}시 {now.minute}분입니다."
+
+# 날씨 반환 함수
+def get_weather(location: str = "Seoul,KR") -> str:
+    url = "https://api.openweathermap.org/data/2.5/weather"
+    params = {"q": location, "appid": WEATHER_KEY, "units": "metric", "lang": "kr"}
+    data = requests.get(url, params=params).json()
+    desc = data["weather"][0]["description"]
+    temp = data["main"]["temp"]
+    return f"현재 날씨는 {desc}이고, 기온은 {temp}°C예요."
 
 # 🔹 Claude가 말이 많아지지 않도록 강하게 지시하는 시스템 프롬프트
 SYSTEM_PROMPT = """
@@ -69,6 +87,16 @@ async def ask_claude_stream(prompt: str, history: List[Dict[str, str]]):
     :param history: messages=[{"role": "user"|"assistant", "content": "..."}]
     :yield: 문장 단위 응답
     """
+    low = prompt.lower()
+    # 시간 문의 패턴
+    if "몇시" in low or "몇 시" in low or "시간" in low or "시각" in low:
+        yield get_current_time()
+        return
+    # 날씨 문의 패턴
+    if "날씨" in low:
+        yield get_weather()
+        return
+
     buf = ""
 
     # ✅ 시스템 프롬프트를 맨 앞에 한 번만 삽입

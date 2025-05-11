@@ -7,7 +7,9 @@ import threading
 import atexit
 from backend.tts import GoogleStreamTTS
 import asyncio
+import logging
 
+logging.getLogger('werkzeug').setLevel(logging.ERROR)
 # 프로젝트 구조에 맞게 frontend 폴더 경로 설정
 frontend_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'frontend')
 app = Flask(__name__, static_folder=frontend_dir)
@@ -86,7 +88,7 @@ def play_exit_tts():
     async def _play():
         tts = GoogleStreamTTS()
         await tts.start()
-        await tts.enqueue("네, 대화를 종료할게요. 언제든 제가 필요하시면 다시 찾아주세요. 좋은 하루 보내세요!")
+        await tts.enqueue("대화를 종료하겠습니다. 언제든 제가 필요하시면 다시 찾아주세요. 좋은 하루 보내세요!")
         await tts.finish()
     asyncio.run(_play())
 
@@ -99,11 +101,8 @@ def stop_backend():
             return jsonify({"status": "not_running"}), 400
         
         try:
-            # 종료 멘트 TTS 먼저 재생
-            play_exit_tts()
-            # 프로세스 종료
+            # 1. 프로세스 종료
             pid = backend_process.pid
-            
             # 운영체제별 처리
             if os.name == 'nt':  # Windows
                 subprocess.call(['taskkill', '/F', '/T', '/PID', str(pid)])
@@ -115,11 +114,11 @@ def stop_backend():
                         os.killpg(os.getpgid(pid), signal.SIGKILL)
                 except ProcessLookupError:
                     pass  # 프로세스가 이미 종료된 경우
-            
             backend_process = None
             print(f"백엔드 프로세스 종료됨 (PID: {pid})")
+            # 2. 종료 멘트 TTS 재생
+            play_exit_tts()
             return jsonify({"status": "stopped"}), 200
-            
         except Exception as e:
             print(f"백엔드 종료 오류: {str(e)}")
             return jsonify({"status": "error", "message": str(e)}), 500
