@@ -29,8 +29,6 @@ def generate_mouthform_timings(text: str, step_ms: int = 200, output_path: str =
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(mouth_seq, f, ensure_ascii=False, indent=2)
 
-    print(f"✅ mouthForm.json 저장 완료 ({len(mouth_seq)}개 프레임)")
-
 # ✅ 테스트 실행
 if __name__ == "__main__":
     generate_mouthform_timings("오이 아이유 에이 아이 오이야")

@@ -39,9 +39,6 @@ def start_backend():
             backend_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'backend')
             backend_script = os.path.join(backend_dir, 'main.py')
             
-            # Python3 백엔드 실행
-            print(f"백엔드 스크립트 경로: {backend_script}")
-            
             # 운영체제별 프로세스 그룹 설정
             if os.name == 'nt':  # Windows
                 backend_process = subprocess.Popen(
@@ -75,7 +72,6 @@ def start_backend():
                     "error": f"백엔드 실행 실패: {stderr}"
                 }), 500
             
-            print(f"백엔드 프로세스 시작됨 (PID: {backend_process.pid})")
             return jsonify({"status": "started", "pid": backend_process.pid}), 200
             
         except Exception as e:
@@ -115,7 +111,6 @@ def stop_backend():
                 except ProcessLookupError:
                     pass  # 프로세스가 이미 종료된 경우
             backend_process = None
-            print(f"백엔드 프로세스 종료됨 (PID: {pid})")
             # 2. 종료 멘트 TTS 재생
             play_exit_tts()
             return jsonify({"status": "stopped"}), 200
@@ -136,7 +131,6 @@ def cleanup_process():
                     os.killpg(os.getpgid(pid), signal.SIGTERM)
                 except ProcessLookupError:
                     pass  # 프로세스가 이미 종료된 경우
-            print(f"서버 종료 시 백엔드 프로세스 정리됨 (PID: {pid})")
         except:
             pass
 
@@ -146,4 +140,4 @@ atexit.register(cleanup_process)
 if __name__ == '__main__':
     print(f"Frontend 디렉토리: {frontend_dir}")
     print("서버 시작 중... http://localhost:8000 에서 접속하세요.")
-    app.run(host='0.0.0.0', port=8000, debug=True)
+    app.run(host='0.0.0.0', port=8000, debug=False)

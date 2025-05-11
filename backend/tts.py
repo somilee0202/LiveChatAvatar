@@ -33,7 +33,6 @@ def find_output_device(target_keywords=("Speaker", "Output", "Built-in", "스피
         info = pa.get_device_info_by_index(i)
         name = info["name"]
         if any(k.lower() in name.lower() for k in target_keywords):
-            print(f"🎧 출력 장치 선택됨: {i} - {name}")
             return i
     print("❌ 출력 장치를 찾지 못했습니다. 시스템 기본 장치 사용 시도")
     return None

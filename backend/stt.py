@@ -55,7 +55,7 @@ def stream_stt_until_final():
 
 
     try:
-        print("🎤 말하세요... ")
+        print("< 🎤 음성 인식 중... >")
         for response in responses:
             if not response.results:
                 continue
@@ -66,16 +66,10 @@ def stream_stt_until_final():
             
             if result.is_final:
                 final_transcript_time = time.time()
-                print(f"\n📝 최종 인식: {transcript}")
-
-                # 체감 레이턴시 계산
-                if last_audio_time:
-                    latency = round(final_transcript_time - last_audio_time, 3)
-                    print(f"⏱ 체감 STT 레이턴시: {latency}초")
-
+                print(f"\n최종 인식: {transcript}\n")
                 return transcript, final_transcript_time
             else:
-                print(f"⌛ 중간 인식: {transcript}", end="\r")
+                print(f"중간 인식: {transcript}", end="\r")
 
     finally:
         stream.stop_stream()

@@ -90,7 +90,7 @@ async def speak_response(text):
 
 async def main():
     run = 1
-    print("🌟 실시간 아바타 대화 시스템 시작")
+    print("🌟 실시간 아바타 대화 시스템 시작 🌟")
 
     # ✅ [1회성 예열] 고정 문장으로 LLM → TTS 실행
     transcript = "안녕" # 예열 문장
@@ -107,7 +107,7 @@ async def main():
         total_end, tts_latency = await speak_response(response)
 
         total_latency = total_end - total_start
-        print(f"🟣 총 레이턴시: {total_latency:.2f}초")
+        print(f"🔴 총 레이턴시: {total_latency:.2f}초\n")
 
         with open(CSV_FILE, mode="a", newline="", encoding="utf-8") as f:
             writer = csv.DictWriter(f, fieldnames=FIELDNAMES)
